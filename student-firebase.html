@@ -3,67 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Học Sinh - Firebase (Nhiều Máy)</title>
+    <title>Học Sinh - Làm Bài Thi</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* CSS CƠ BẢN */
+        .hidden { display: none !important; }
+        .card { max-width: 700px; margin: 20px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .input-field { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; }
+        .btn-primary { background: #007bff; }
+        .btn-success { background: #28a745; }
+        .btn-danger { background: #dc3545; }
+        
+        /* CÂU HỎI */
+        .question-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff; }
+        .question-text { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; }
+        .choice-label { display: block; padding: 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
+        .choice-label:hover { background: #e9ecef; }
+        input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
+
+        /* ĐÚNG/SAI */
+        .tf-question-box { background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0369a1; }
+        .tf-section-title { font-size: 0.75rem; font-weight: 700; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .tf-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: white; border-radius: 6px; margin-bottom: 6px; border: 1px solid #bae6fd; }
+        .tf-item-text { flex: 1; font-size: 0.95em; }
+        .tf-toggle { display: flex; gap: 6px; flex-shrink: 0; }
+        .tf-btn { padding: 5px 14px; border: 2px solid #cbd5e1; border-radius: 20px; cursor: pointer; font-size: 0.82rem; font-weight: 700; background: white; transition: all 0.15s; color: #475569; }
+        .tf-btn.selected-true { background: #10b981; border-color: #10b981; color: white; }
+        .tf-btn.selected-false { background: #ef4444; border-color: #ef4444; color: white; }
+
+        /* TỰ LUẬN DISPLAY */
+        .essay-display-box { background: #fff7ed; border: 2px solid #fed7aa; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .essay-display-title { font-size: 0.8rem; font-weight: 700; color: #9a3412; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .essay-q-item { background: white; border-radius: 8px; padding: 12px 15px; margin-bottom: 10px; border: 1px solid #fed7aa; }
+        .essay-note { background: #fef3c7; border-radius: 6px; padding: 10px 14px; font-size: 0.85rem; color: #92400e; margin-bottom: 12px; text-align: center; }
+
+        /* ĐỒNG HỒ */
+        .exam-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+        .timer { font-size: 24px; font-weight: bold; color: #dc3545; background: #fff0f0; padding: 5px 15px; border-radius: 20px; }
+        
+        /* KẾT QUẢ */
+        .score-circle { width: 120px; height: 120px; background: #28a745; color: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto 20px; }
+        .score-number { font-size: 40px; font-weight: bold; }
+        .cheat-alert { background: #ffebee; color: #c62828; padding: 15px; border: 2px solid #c62828; border-radius: 8px; font-weight: bold; margin-top: 20px; }
+    </style>
 </head>
 <body>
+
     <div class="container">
-        <!-- Login -->
+        
         <div id="loginSection" class="card">
-            <h1>Đăng Nhập Học Sinh</h1>
-            <div id="status" class="hint">⏳ Đang kết nối...</div>
-            <input type="text" id="name" placeholder="Họ tên" class="input-field">
-            <input type="text" id="code" placeholder="Mã đề thi" class="input-field">
-            <button onclick="login()" class="btn btn-primary">Đăng Nhập</button>
+            <h2 style="text-align: center;">Đăng Nhập Thi</h2>
+            <p id="status" style="text-align: center; color: #666;">⏳ Đang kết nối máy chủ...</p>
+            
+            <label>Họ và Tên:</label>
+            <input type="text" id="name" class="input-field" placeholder="Nhập tên của bạn...">
+            
+            <label>Mã Đề Thi:</label>
+            <input type="text" id="code" class="input-field" placeholder="Nhập mã (VD: X8K2MN)">
+            
+            <button onclick="login()" class="btn btn-primary">VÀO PHÒNG THI</button>
         </div>
 
-        <!-- Waiting -->
-        <div id="waitingSection" class="card hidden">
-            <h1 id="welcome">Chào mừng!</h1>
-            <div class="exam-info">
-                <h2 id="title"></h2>
-                <p>Thời gian: <strong id="duration"></strong> phút</p>
-                <p>Số câu: <strong id="count"></strong></p>
+        <div id="waitingSection" class="card hidden" style="text-align: center;">
+            <h1>👋 Xin chào, <span id="welcomeName" style="color: #007bff;"></span></h1>
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h2 id="examTitle">Tên Đề Thi</h2>
+                <div style="display: flex; justify-content: space-around; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
+                    <div>⏱️ <strong><span id="examDuration">0</span></strong> phút</div>
+                    <div>📋 <strong><span id="examQCount">0</span></strong> câu TN</div>
+                    <div id="examTFInfo" style="display:none;">✅ <strong><span id="examTFCount">0</span></strong> câu Đúng/Sai</div>
+                    <div id="examEssayInfo" style="display:none;">✍️ <strong><span id="examEssayCount">0</span></strong> câu Tự luận (giấy)</div>
+                </div>
             </div>
-            <button onclick="start()" class="btn btn-success btn-large">Bắt Đầu</button>
+            
+            <div style="text-align: left; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba;">
+                <h3 style="color: #856404; margin-top: 0;">⚠️ QUY ĐỊNH NGHIÊM NGẶT:</h3>
+                <ul style="padding-left: 20px; color: #856404;">
+                    <li>Không được chuyển Tab trình duyệt.</li>
+                    <li>Không được mở cửa sổ ứng dụng khác.</li>
+                    <li>Không được thu nhỏ màn hình.</li>
+                    <li><strong>VI PHẠM SẼ BỊ THU BÀI NGAY LẬP TỨC!</strong></li>
+                </ul>
+            </div>
+            <br>
+            <button onclick="startExam()" class="btn btn-success">TÔI ĐÃ HIỂU - BẮT ĐẦU LÀM</button>
         </div>
 
-        <!-- Exam -->
         <div id="examSection" class="card hidden">
             <div class="exam-header">
-                <h2 id="titleTop"></h2>
-                <div class="timer-display">
-                    ⏱️ <span id="timer" class="timer">00:00</span>
-                </div>
+                <div style="font-weight: bold;">Thí sinh: <span id="studentDisplay"></span></div>
+                <div class="timer" id="timer">00:00</div>
             </div>
 
-            <div id="warning" class="warning-box hidden">
-                ⚠️ KHÔNG CHUYỂN TAB!
-            </div>
+            <div id="questionsList"></div>
 
-            <div id="questions"></div>
-
-            <button onclick="submit()" class="btn btn-primary btn-large">Nộp Bài</button>
+            <button onclick="submitExam(false)" class="btn btn-primary">NỘP BÀI THI</button>
         </div>
 
-        <!-- Result -->
-        <div id="resultSection" class="card hidden">
-            <h1>Kết Quả</h1>
-            <div class="result-display">
-                <div class="score-circle">
-                    <span id="score" class="score-number">0</span>
-                    <span class="score-label">/10</span>
-                </div>
-                <p>Họ tên: <strong id="resultName"></strong></p>
-                <p>Đúng: <strong id="correct"></strong>/<strong id="total"></strong></p>
-                <p id="msg" class="status-message"></p>
+        <div id="resultSection" class="card hidden" style="text-align: center;">
+            <h2 id="resultTitle">KẾT QUẢ BÀI THI</h2>
+            
+            <div id="cheatBox" class="cheat-alert hidden">
+                ⛔ BÀI THI ĐÃ BỊ DỪNG!<br>
+                Hệ thống phát hiện bạn đã rời khỏi màn hình thi.
             </div>
-            <div id="details" class="detailed-results"></div>
+
+            <div class="score-circle" id="scoreCircle">
+                <span id="scoreVal" class="score-number">0</span>
+                <span>Điểm</span>
+            </div>
+            
+            <p>Số câu đúng: <strong id="correctCount">0</strong> / <strong id="totalCount">0</strong></p>
+            <p id="tfResultLine" style="display:none; color:#0369a1; font-weight:600;"></p>
+            <p id="resultMsg" style="font-style: italic; color: #555;"></p>
         </div>
+
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="student-firebase.js"></script>
+
+    <script>
+        // ============================================================
+        // 🔴 ĐIỀN THÔNG TIN FIREBASE CỦA BẠN VÀO ĐÂY:
+        // ============================================================
+        const config = {
+            apiKey: "AIzaSyADniEL6bbqGpa1a4O_k1Q0w5GRW5cfWjY", 
+            databaseURL: "https://exam-project-4ef04-default-rtdb.firebaseio.com", 
+            projectId: "exam-project-4ef04"
+        };
+        // ============================================================
+
+        let db = null;
+        let examData = null;
+        let studentName = "";
+        let examCode = "";
+        let examNodePath = "";  // đường dẫn node Firebase
+        let timerInterval = null;
+        let userAnswers = {};
+        let isExamRunning = false; // Biến kiểm soát trạng thái thi
+
+        // 1. TỰ ĐỘNG KẾT NỐI
+        window.onload = function() {
+            try {
+                if (config.databaseURL.endsWith("/")) config.databaseURL = config.databaseURL.slice(0, -1);
+                config.authDomain = config.projectId + ".firebaseapp.com";
+                if (!firebase.apps.length) firebase.initializeApp(config);
+                db = firebase.database();
+
+                db.ref(".info/connected").on("value", snap => {
+                    const st = document.getElementById("status");
+                    if(snap.val()) {
+                        st.innerHTML = "🟢 <strong>Đã kết nối hệ thống</strong>";
+                        st.style.color = "green";
+                    } else {
+                        st.innerHTML = "🔴 Mất kết nối mạng...";
+                        st.style.color = "red";
+                    }
+                });
+            } catch (e) { alert("⚠️ Lỗi config: Chưa nhập API Key!"); }
+        };
+
+        // 2. ĐĂNG NHẬP
+        async function login() {
+            studentName = document.getElementById("name").value.trim();
+            examCode = document.getElementById("code").value.trim().toUpperCase();
+
+            if (!studentName || !examCode) return alert("Vui lòng nhập đủ thông tin!");
+
+            try {
+                // Tìm đề theo mã trong toàn bộ node exams/khoi_*/subject/code
+                const rootSnap = await db.ref("exams").once("value");
+                const root = rootSnap.val() || {};
+                let data = null;
+                let foundKhoi = '', foundSubject = '';
+
+                outer: for (const khoiKey of Object.keys(root)) {
+                    const khoiData = root[khoiKey];
+                    if (typeof khoiData !== 'object') continue;
+                    for (const subjectKey of Object.keys(khoiData)) {
+                        const subjectData = khoiData[subjectKey];
+                        if (typeof subjectData !== 'object') continue;
+                        if (subjectData[examCode]) {
+                            data = subjectData[examCode];
+                            foundKhoi = khoiKey;
+                            foundSubject = subjectKey;
+                            break outer;
+                        }
+                    }
+                }
+
+                if (!data) return alert("❌ Mã đề không đúng!");
+                if (!data.active) return alert("⛔ Đề thi đã đóng!");
+
+                examData = data;
+                examNodePath = `exams/${foundKhoi}/${foundSubject}/${examCode}`;
+
+                document.getElementById("loginSection").classList.add("hidden");
+                document.getElementById("waitingSection").classList.remove("hidden");
+                
+                document.getElementById("welcomeName").textContent = studentName;
+                document.getElementById("examTitle").textContent = data.title;
+                document.getElementById("examDuration").textContent = data.duration;
+                document.getElementById("examQCount").textContent = (data.questions || []).length;
+
+                const tfCount = (data.tfQuestions || []).length;
+                const essayCount = (data.essayQuestions || []).length;
+                const tfInfo = document.getElementById("examTFInfo");
+                const essayInfo = document.getElementById("examEssayInfo");
+                if (tfCount > 0) { tfInfo.style.display = ''; document.getElementById("examTFCount").textContent = tfCount; }
+                if (essayCount > 0) { essayInfo.style.display = ''; document.getElementById("examEssayCount").textContent = essayCount; }
+
+            } catch (e) { alert("Lỗi: " + e.message); }
+        }
+
+        // 3. BẮT ĐẦU THI
+        function startExam() {
+            // Yêu cầu Fullscreen để tập trung
+            try { if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } catch(e){}
+
+            document.getElementById("waitingSection").classList.add("hidden");
+            document.getElementById("examSection").classList.remove("hidden");
+            document.getElementById("studentDisplay").textContent = studentName;
+
+            renderQuestions();
+            startTimer(examData.duration * 60);
+            
+            // BẬT CỜ ĐANG THI -> Kích hoạt Anti-Cheat
+            isExamRunning = true;
+            setupAntiCheat();
+        }
+
+        function renderQuestions() {
+            const list = document.getElementById("questionsList");
+            list.innerHTML = "";
+            const mcQuestions = examData.questions || [];
+            const tfQuestions = examData.tfQuestions || [];
+            const essayQs = examData.essayQuestions || [];
+
+            // --- Phần Trắc Nghiệm ---
+            if (mcQuestions.length > 0) {
+                const sectionTitle = document.createElement('p');
+                sectionTitle.style.cssText = 'font-weight:700; color:#1d4ed8; margin:0 0 12px 0; font-size:0.95rem; text-transform:uppercase; letter-spacing:0.5px;';
+                sectionTitle.textContent = `📋 PHẦN TRẮC NGHIỆM (${mcQuestions.length} câu)`;
+                list.appendChild(sectionTitle);
+
+                mcQuestions.forEach((q, index) => {
+                    let html = `<div class="question-box"><div class="question-text">Câu ${index + 1}: ${q.question}</div>`;
+                    q.choices.forEach((choice, cIndex) => {
+                        html += `<label class="choice-label"><input type="radio" name="q${index}" onchange="userAnswers['mc_${index}']=${cIndex}"> ${String.fromCharCode(65 + cIndex)}. ${choice}</label>`;
+                    });
+                    list.innerHTML += html + "</div>";
+                });
+            }
+
+            // --- Phần Đúng/Sai ---
+            if (tfQuestions.length > 0) {
+                const tfTitle = document.createElement('p');
+                tfTitle.style.cssText = 'font-weight:700; color:#0369a1; margin:16px 0 12px 0; font-size:0.95rem; text-transform:uppercase; letter-spacing:0.5px;';
+                tfTitle.textContent = `✅ PHẦN ĐÚNG/SAI (${tfQuestions.length} câu)`;
+                list.appendChild(tfTitle);
+
+                tfQuestions.forEach((q, qIndex) => {
+                    const box = document.createElement('div');
+                    box.className = 'tf-question-box';
+                    let itemsHtml = q.items.map((item, iIndex) => `
+                        <div class="tf-item" id="tfitem_${qIndex}_${iIndex}">
+                            <div class="tf-item-text"><strong>${String.fromCharCode(97 + iIndex)})</strong> ${item.text}</div>
+                            <div class="tf-toggle">
+                                <button class="tf-btn" id="tfbtn_${qIndex}_${iIndex}_true"
+                                    onclick="selectTF(${qIndex}, ${iIndex}, true)">Đúng</button>
+                                <button class="tf-btn" id="tfbtn_${qIndex}_${iIndex}_false"
+                                    onclick="selectTF(${qIndex}, ${iIndex}, false)">Sai</button>
+                            </div>
+                        </div>`).join('');
+                    box.innerHTML = `
+                        <div class="tf-section-title">✅ Câu ${qIndex + 1} — Đúng/Sai</div>
+                        <div class="question-text" style="font-size:1em; margin-bottom:10px;">${q.question}</div>
+                        ${itemsHtml}`;
+                    list.appendChild(box);
+                });
+            }
+
+            // --- Phần Tự luận (chỉ hiển thị, làm giấy) ---
+            if (essayQs.length > 0) {
+                const essayBox = document.createElement('div');
+                essayBox.className = 'essay-display-box';
+                essayBox.innerHTML = `
+                    <div class="essay-display-title">✍️ PHẦN TỰ LUẬN — Làm trên giấy (${essayQs.length} câu)</div>
+                    <div class="essay-note">⚠️ Phần này làm trên giấy thi. Đọc kỹ rồi trả lời vào tờ giấy của bạn.</div>
+                    ${essayQs.map((q, i) => `
+                        <div class="essay-q-item">
+                            <strong>Câu ${i+1}:</strong> ${q.question}
+                            ${q.maxScore ? `<span style="float:right; font-size:0.8rem; color:#f59e0b; font-weight:700;">(${q.maxScore} điểm)</span>` : ''}
+                        </div>`).join('')}`;
+                list.appendChild(essayBox);
+            }
+        }
+
+        function selectTF(qIndex, iIndex, value) {
+            if (!userAnswers['tf']) userAnswers['tf'] = {};
+            if (!userAnswers['tf'][qIndex]) userAnswers['tf'][qIndex] = {};
+            userAnswers['tf'][qIndex][iIndex] = value;
+
+            // Cập nhật UI
+            const trueBtn = document.getElementById(`tfbtn_${qIndex}_${iIndex}_true`);
+            const falseBtn = document.getElementById(`tfbtn_${qIndex}_${iIndex}_false`);
+            trueBtn.className = 'tf-btn' + (value === true ? ' selected-true' : '');
+            falseBtn.className = 'tf-btn' + (value === false ? ' selected-false' : '');
+        }
+
+        function startTimer(seconds) {
+            updateTimerUI(seconds);
+            timerInterval = setInterval(() => {
+                seconds--;
+                updateTimerUI(seconds);
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    alert("⏰ HẾT GIỜ!");
+                    submitExam(false, "timeout"); 
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI(s) {
+            const m = Math.floor(s / 60).toString().padStart(2,'0');
+            const sec = (s % 60).toString().padStart(2,'0');
+            document.getElementById("timer").textContent = `${m}:${sec}`;
+        }
+
+        // --- 💀 ANTI-CHEAT: CHUYỂN TAB LÀ CHẾT ---
+        function setupAntiCheat() {
+            document.addEventListener("visibilitychange", () => {
+                // Chỉ xử lý nếu đang trong giờ làm bài
+                if (document.hidden && isExamRunning) {
+                    // NỘP BÀI NGAY LẬP TỨC VỚI LÝ DO 'CHEAT'
+                    submitExam(true, "cheat");
+                }
+            });
+            
+            // Chặn chuột phải
+            document.addEventListener('contextmenu', event => event.preventDefault());
+        }
+
+        // 4. NỘP BÀI
+        async function submitExam(auto = false, reason = "normal") {
+            if (!auto && !confirm("Nộp bài ngay?")) return;
+
+            isExamRunning = false; 
+            clearInterval(timerInterval);
+
+            const mcQuestions = examData.questions || [];
+            const tfQuestions = examData.tfQuestions || [];
+
+            // --- Tính điểm TN ---
+            let mcCorrect = 0;
+            mcQuestions.forEach((q, i) => {
+                if (userAnswers['mc_' + i] === q.correctAnswer) mcCorrect++;
+            });
+            const mcTotal = mcQuestions.length;
+            const mcRatio = examData.mcScoreRatio || 10;
+            const mcScore = mcTotal > 0 ? ((mcCorrect / mcTotal) * mcRatio).toFixed(2) : 0;
+
+            // --- Tính điểm Đúng/Sai ---
+            // Mỗi câu 4 ý, đúng hết 4 ý = 1đ, đúng 3 = 0.75đ, đúng 2 = 0.5đ, đúng 1 = 0.25đ
+            let tfCorrectItems = 0;
+            let tfTotalItems = 0;
+            const tfRatio = examData.tfScoreRatio || 0;
+            tfQuestions.forEach((q, qIdx) => {
+                q.items.forEach((item, iIdx) => {
+                    tfTotalItems++;
+                    const ans = userAnswers['tf'] && userAnswers['tf'][qIdx] && userAnswers['tf'][qIdx][iIdx];
+                    if (ans === item.correct) tfCorrectItems++;
+                });
+            });
+            const tfScore = tfTotalItems > 0 ? ((tfCorrectItems / tfTotalItems) * tfRatio).toFixed(2) : 0;
+
+            // --- Tổng điểm ---
+            const totalScore = (parseFloat(mcScore) + parseFloat(tfScore)).toFixed(1);
+
+            const resultData = {
+                name: studentName, code: examCode,
+                score: mcScore,
+                tfScore: tfScore,
+                totalScore: totalScore,
+                correct: mcCorrect, total: mcTotal,
+                tfCorrectItems, tfTotalItems,
+                examType: examData.examType || 'mc',
+                timestamp: Date.now(),
+                tabSwitch: (reason === "cheat")
+            };
+
+            await db.ref("results").push(resultData);
+
+            document.getElementById("examSection").classList.add("hidden");
+            document.getElementById("resultSection").classList.remove("hidden");
+            
+            document.getElementById("scoreVal").textContent = totalScore;
+            document.getElementById("correctCount").textContent = mcCorrect;
+            document.getElementById("totalCount").textContent = mcTotal;
+
+            // Hiện thêm dòng Đúng/Sai nếu có
+            const tfLine = document.getElementById("tfResultLine");
+            if (tfTotalItems > 0) {
+                tfLine.style.display = '';
+                tfLine.textContent = `✅ Đúng/Sai: ${tfCorrectItems}/${tfTotalItems} ý đúng (${tfScore} điểm)`;
+            }
+
+            const msgNode = document.getElementById("resultMsg");
+            const cheatBox = document.getElementById("cheatBox");
+            const circle = document.getElementById("scoreCircle");
+
+            if (reason === "cheat") {
+                cheatBox.classList.remove("hidden");
+                msgNode.textContent = "Bạn đã vi phạm quy chế thi (Rời màn hình).";
+                circle.style.background = "#dc3545";
+            } else if (reason === "timeout") {
+                msgNode.textContent = "Đã tự động nộp bài do hết giờ.";
+            } else {
+                msgNode.textContent = "Bạn đã nộp bài thành công.";
+            }
+
+            // Nếu có tự luận, nhắc học sinh
+            if ((examData.essayQuestions || []).length > 0) {
+                msgNode.textContent += " Nhớ nộp phần tự luận làm giấy cho giáo viên!";
+            }
+        }
+    </script>
 </body>
 </html>
